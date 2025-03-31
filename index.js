@@ -12,7 +12,8 @@ const image = document.getElementById('cover'),
 
 const music = new Audio();
 
-const songs = [
+// Change const to let for songs array
+let songs = [
     {
         path: 'song/1.mp3',
         displayName: 'Bambholle-Laxmii',
@@ -128,6 +129,21 @@ function loadMusic(song) {
     artist.textContent = song.artist;
     image.src = song.cover;
     background.src = song.cover;
+    
+    // Ensure background image is visible
+    background.style.opacity = '1';
+    image.classList.add('active');
+    
+    // Reset progress bar
+    progress.style.width = '0%';
+    currentTimeEl.textContent = '0:00';
+    
+    // Wait for duration to be loaded
+    music.addEventListener('loadedmetadata', () => {
+        const minutes = Math.floor(music.duration / 60);
+        const seconds = Math.floor(music.duration % 60);
+        durationEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    });
 }
 
 function changeMusic(direction) {
@@ -160,3 +176,154 @@ music.addEventListener('timeupdate', updateProgressBar);
 playerProgress.addEventListener('click', setProgressBar);
 
 loadMusic(songs[musicIndex]);
+
+// Add at the beginning of your file
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+
+// Add your Deezer API search function
+async function searchSongs(query) {
+    const options = {
+        method: 'GET',
+        headers: {
+            'X-RapidAPI-Host': 'deezerdevs-deezer.p.rapidapi.com',
+            'X-RapidAPI-Key': 'be5038084bmsh6164ec659d9b6dcp186095jsn62eaa75ee625'
+        }
+    };
+
+    try {
+        const response = await fetch(`https://deezerdevs-deezer.p.rapidapi.com/search?q=${encodeURIComponent(query)}`, options);
+        const data = await response.json();
+        return data.data;
+    } catch (error) {
+        console.error('Error searching songs:', error);
+        return [];
+    }
+}
+
+async function getTrackDetails(trackId) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener('readystatechange', function () {
+            if (this.readyState === this.DONE) {
+                if (this.status === 200) {
+                    resolve(JSON.parse(this.responseText));
+                } else {
+                    reject(new Error('Failed to fetch track details'));
+                }
+            }
+        });
+
+        xhr.open('GET', `https://deezerdevs-deezer.p.rapidapi.com/track/${trackId}`);
+        xhr.setRequestHeader('x-rapidapi-key', 'be5038084bmsh6164ec659d9b6dcp186095jsn62eaa75ee625');
+        xhr.setRequestHeader('x-rapidapi-host', 'deezerdevs-deezer.p.rapidapi.com');
+
+        xhr.send(null);
+    });
+}
+
+async function handleSearch() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+
+    try {
+        const searchResults = await searchSongs(query);
+        if (searchResults && searchResults.length > 0) {
+            const trackDetails = await getTrackDetails(searchResults[0].id);
+            
+            songs = [{
+                path: trackDetails.preview,
+                displayName: trackDetails.title,
+                artist: trackDetails.artist.name,
+                cover: trackDetails.album.cover_xl,
+                background: trackDetails.album.cover_xl
+            }];
+            
+            musicIndex = 0;
+            loadMusic(songs[0]);
+            image.classList.add('active');
+            background.style.opacity = '1';
+            playMusic();
+        }
+    } catch (error) {
+        console.error('Error handling search:', error);
+    }
+}
+
+// Add event listeners for search
+searchInput.addEventListener('input', handleSearchInput);
+searchBtn.addEventListener('click', handleSearch);
+searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        handleSearch();
+    }
+});
+
+// Add after your existing variable declarations
+const searchSuggestions = document.getElementById('search-suggestions');
+let debounceTimeout;
+
+// Add this function for handling suggestions
+async function handleSearchInput(e) {
+    clearTimeout(debounceTimeout);
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
+        searchSuggestions.innerHTML = '';
+        searchSuggestions.classList.remove('active');
+        return;
+    }
+
+    debounceTimeout = setTimeout(async () => {
+        try {
+            const results = await searchSongs(query);
+            if (results && results.length > 0) {
+                searchSuggestions.innerHTML = results.slice(0, 5).map(song => `
+                    <div class="suggestion-item" data-song-index="${results.indexOf(song)}">
+                        <img src="${song.album.cover_small}" alt="${song.title}">
+                        <div class="suggestion-info">
+                            <div class="suggestion-title">${song.title}</div>
+                            <div class="suggestion-artist">${song.artist.name}</div>
+                        </div>
+                    </div>
+                `).join('');
+                searchSuggestions.classList.add('active');
+
+                // Add click handlers for suggestions
+                document.querySelectorAll('.suggestion-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const index = item.dataset.songIndex;
+                        loadSearchResult(results[index]);
+                        searchSuggestions.classList.remove('active');
+                        searchInput.value = results[index].title;
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error getting suggestions:', error);
+        }
+    }, 300);
+}
+
+// Add this function to load selected search result
+function loadSearchResult(song) {
+    const playerSong = {
+        path: song.preview,
+        displayName: song.title,
+        artist: song.artist.name,
+        cover: song.album.cover_medium
+    };
+    
+    loadMusic(playerSong);
+    playMusic();
+}
+
+// Update event listeners
+searchInput.addEventListener('input', handleSearchInput);
+document.addEventListener('click', (e) => {
+    if (!searchSuggestions.contains(e.target) && e.target !== searchInput) {
+        searchSuggestions.classList.remove('active');
+    }
+});
