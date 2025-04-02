@@ -8,8 +8,12 @@ const image = document.getElementById('cover'),
     prevBtn = document.getElementById('prev'),
     nextBtn = document.getElementById('next'),
     playBtn = document.getElementById('play'),
-    background = document.getElementById('bg-img');
+    background = document.getElementById('bg-img'),
+    searchInput = document.getElementById('search-input'),
+    searchBtn = document.getElementById('search-btn'),
+    searchSuggestions = document.getElementById('search-suggestions');
 
+let debounceTimeout;
 const music = new Audio();
 
 // Change const to let for songs array
@@ -177,10 +181,6 @@ playerProgress.addEventListener('click', setProgressBar);
 
 loadMusic(songs[musicIndex]);
 
-// Add at the beginning of your file
-const searchInput = document.getElementById('search-input');
-const searchBtn = document.getElementById('search-btn');
-
 // Add your Deezer API search function
 async function searchSongs(query) {
     const options = {
@@ -224,10 +224,26 @@ async function getTrackDetails(trackId) {
     });
 }
 
+// Update handleSearch function
 async function handleSearch() {
-    const query = searchInput.value.trim();
+    const query = searchInput.value.trim().toLowerCase();
     if (!query) return;
 
+    // First, search in local songs
+    const localResults = songs.filter(song => 
+        song.displayName.toLowerCase().includes(query) || 
+        song.artist.toLowerCase().includes(query)
+    );
+
+    if (localResults.length > 0) {
+        // Load the first matching local song
+        musicIndex = songs.indexOf(localResults[0]);
+        loadMusic(localResults[0]);
+        playMusic();
+        return;
+    }
+
+    // If no local results, search using API
     try {
         const searchResults = await searchSongs(query);
         if (searchResults && searchResults.length > 0) {
@@ -243,8 +259,6 @@ async function handleSearch() {
             
             musicIndex = 0;
             loadMusic(songs[0]);
-            image.classList.add('active');
-            background.style.opacity = '1';
             playMusic();
         }
     } catch (error) {
@@ -252,23 +266,10 @@ async function handleSearch() {
     }
 }
 
-// Add event listeners for search
-searchInput.addEventListener('input', handleSearchInput);
-searchBtn.addEventListener('click', handleSearch);
-searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        handleSearch();
-    }
-});
-
-// Add after your existing variable declarations
-const searchSuggestions = document.getElementById('search-suggestions');
-let debounceTimeout;
-
-// Add this function for handling suggestions
+// Update handleSearchInput function to include local results
 async function handleSearchInput(e) {
     clearTimeout(debounceTimeout);
-    const query = e.target.value.trim();
+    const query = e.target.value.trim().toLowerCase();
     
     if (query.length < 2) {
         searchSuggestions.innerHTML = '';
@@ -278,26 +279,53 @@ async function handleSearchInput(e) {
 
     debounceTimeout = setTimeout(async () => {
         try {
-            const results = await searchSongs(query);
-            if (results && results.length > 0) {
-                searchSuggestions.innerHTML = results.slice(0, 5).map(song => `
-                    <div class="suggestion-item" data-song-index="${results.indexOf(song)}">
-                        <img src="${song.album.cover_small}" alt="${song.title}">
+            // Search in local songs first
+            const localResults = songs.filter(song => 
+                song.displayName.toLowerCase().includes(query) || 
+                song.artist.toLowerCase().includes(query)
+            ).slice(0, 3);
+
+            // Get API results
+            const apiResults = await searchSongs(query);
+            const combinedResults = [
+                ...localResults.map(song => ({
+                    ...song,
+                    isLocal: true
+                })),
+                ...(apiResults || []).slice(0, 3).map(song => ({
+                    title: song.title,
+                    artist: { name: song.artist.name },
+                    album: { cover_small: song.album.cover_small },
+                    isLocal: false,
+                    apiData: song
+                }))
+            ];
+
+            if (combinedResults.length > 0) {
+                searchSuggestions.innerHTML = combinedResults.map(song => `
+                    <div class="suggestion-item" data-song-index="${combinedResults.indexOf(song)}" data-is-local="${song.isLocal}">
+                        <img src="${song.isLocal ? song.cover : song.album.cover_small}" alt="${song.isLocal ? song.displayName : song.title}">
                         <div class="suggestion-info">
-                            <div class="suggestion-title">${song.title}</div>
-                            <div class="suggestion-artist">${song.artist.name}</div>
+                            <div class="suggestion-title">${song.isLocal ? song.displayName : song.title}</div>
+                            <div class="suggestion-artist">${song.isLocal ? song.artist : song.artist.name}</div>
                         </div>
                     </div>
                 `).join('');
                 searchSuggestions.classList.add('active');
 
-                // Add click handlers for suggestions
-                document.querySelectorAll('.suggestion-item').forEach(item => {
+                // Update click handlers
+                document.querySelectorAll('.suggestion-item').forEach((item, index) => {
                     item.addEventListener('click', () => {
-                        const index = item.dataset.songIndex;
-                        loadSearchResult(results[index]);
+                        const result = combinedResults[index];
+                        if (result.isLocal) {
+                            musicIndex = songs.indexOf(result);
+                            loadMusic(result);
+                        } else {
+                            loadSearchResult(result.apiData);
+                        }
                         searchSuggestions.classList.remove('active');
-                        searchInput.value = results[index].title;
+                        searchInput.value = result.isLocal ? result.displayName : result.title;
+                        playMusic();
                     });
                 });
             }
