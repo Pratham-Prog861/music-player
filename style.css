@@ -278,9 +278,9 @@ h3{
 .search-container input:focus {
     outline: none;
 }
-
-
-/* Add at the end of your CSS file */
+.search-container input::placeholder {
+    color: #666; 
+}
 
 /* Tablet Devices */
 @media screen and (max-width: 768px) {
