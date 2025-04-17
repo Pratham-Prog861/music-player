@@ -12,6 +12,7 @@ A modern, responsive music player web application with search functionality and 
 - 🔄 Auto-play next track
 - 💡 Live search suggestions
 - ⏱️ Real-time duration and current time display
+- You can download the song
 
 ## Technologies Used
 
@@ -40,6 +41,7 @@ cd music-player
 - Click on a song in the search results to play it.
 - Use the play, pause, next, and previous controls to control the music.
 - Use the progress bar to seek to a specific point in the song.
+- The background image changes dynamically to match the album art.
 
 ### Search Feature
 - Use the search bar at the top to find songs
@@ -66,4 +68,4 @@ music-player/
 
 
 ## License
-This project is open source and available under the MIT License.
+This project is open source

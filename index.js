@@ -355,3 +355,80 @@ document.addEventListener('click', (e) => {
         searchSuggestions.classList.remove('active');
     }
 });
+
+// Add after your existing variable declarations
+const downloadBtn = document.getElementById('download');
+
+// Add the download functionality
+async function downloadCurrentSong() {
+    try {
+        const response = await fetch(music.src);
+        const blob = await response.blob();
+        
+        // Create a temporary link element
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        
+        // Set the download filename
+        const fileName = `${title.textContent} - ${artist.textContent}.mp3`;
+        downloadLink.download = fileName;
+        
+        // Append to body, click, and remove
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up the URL object
+        URL.revokeObjectURL(downloadLink.href);
+    } catch (error) {
+        console.error('Error downloading song:', error);
+        alert('Failed to download the song. Please try again.');
+    }
+}
+
+// Add event listener for download button
+downloadBtn.addEventListener('click', downloadCurrentSong);
+
+// Add keyboard controls
+// Update the keyboard controls section
+document.addEventListener('keydown', (e) => {
+    // Space bar - Play/Pause
+    if (e.code === 'Space' && !e.ctrlKey) {
+        e.preventDefault(); // Prevent page scroll
+        if (isPlaying) {
+            pauseMusic();
+        } else {
+            playMusic();
+        }
+    }
+
+    // Right arrow - Next song
+    if (e.code === 'ArrowRight') {
+        changeMusic(1);
+    }
+
+    // Left arrow - Previous song
+    if (e.code === 'ArrowLeft') {
+        changeMusic(-1);
+    }
+
+    // Ctrl + K or Forward Slash for search focus
+    if ((e.code === 'KeyK' && (e.ctrlKey || e.metaKey)) || (!e.ctrlKey && !e.metaKey && e.key === '/')) {
+        e.preventDefault();
+        searchInput.focus();
+        // Clear the input when using slash key
+        if (e.key === '/') {
+            searchInput.value = '';
+        }
+    }
+
+    // K - Download current song
+    if (e.code === 'KeyK' && !e.ctrlKey) {
+        downloadCurrentSong();
+    }
+});
+
+// Add this to help users discover shortcuts
+// searchInput is already declared at the top of the file
+// No need to redeclare it
+searchInput.setAttribute('placeholder', 'Search songs (Ctrl + K or /)');

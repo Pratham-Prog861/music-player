@@ -163,7 +163,7 @@ h3{
 .play-button{
     font-size: 44px;
     position: relative;
-    top: 3px;
+    top: 2px;
 }
 
 
@@ -282,6 +282,29 @@ h3{
     color: #666; 
 }
 
+.player-controls {
+    position: relative;
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;  /* Adjusted gap to accommodate the new icon */
+}
+
+/* Add specific styling for download icon */
+#download {
+    position: absolute;
+    font-size: 22px;  /* Slightly smaller than other controls */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    right: -120px;
+}
+
+#download:hover {
+    color: #1DB954;
+    transform: scale(1.1);
+}
+
 /* Tablet Devices */
 @media screen and (max-width: 768px) {
     .container {
@@ -289,11 +312,18 @@ h3{
         height: 480px;
         margin-top: 60px;
     }
+    .player-controls{
+        gap: 25px;
+        left: 85px;
+    }
 
     .player-img {
         width: 250px;
         height: 250px;
-        left: 50px;
+        left: 40px;
+    }
+    #download {
+        right: -80px;
     }
 
     .search-container input {
@@ -312,11 +342,13 @@ h3{
         height: 450px;
         margin-top: 50px;
     }
-
     .player-img {
         width: 220px;
         height: 220px;
         left: 40px;
+    }
+    #download {
+        right: -50px;
     }
 
     h2 {
@@ -328,7 +360,8 @@ h3{
     }
 
     .player-controls {
-        left: 85px;
+        left: 55px;
+        gap: 20px;
     }
 
     .fa-solid {
