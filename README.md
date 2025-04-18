@@ -48,6 +48,12 @@ cd music-player
 - Click on search suggestions to play that track
 - Search results are powered by Deezer API
 
+### Shortcut Keys
+- Spacebar: Play/Pause
+- Right Arrow: Next Track
+- Left Arrow: Previous Track
+- Download: Press D to download the song
+
 
 ### Project Structure
 
