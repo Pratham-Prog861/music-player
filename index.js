@@ -357,7 +357,7 @@ document.addEventListener('click', (e) => {
 });
 
 // Add after your existing variable declarations
-const downloadBtn = document.getElementById('download');
+const downloadBtn = document.querySelector('.fa-download');  // Update this line
 
 // Add the download functionality
 async function downloadCurrentSong() {
@@ -392,9 +392,20 @@ downloadBtn.addEventListener('click', downloadCurrentSong);
 // Add keyboard controls
 // Update the keyboard controls section
 document.addEventListener('keydown', (e) => {
+    // Don't trigger shortcuts if user is typing in search
+    if (document.activeElement === searchInput) {
+        return;
+    }
+
+    // D key for download (changed from K to avoid conflicts)
+    if (e.code === 'KeyD' && !e.ctrlKey) {
+        e.preventDefault();
+        downloadCurrentSong();
+    }
+
     // Space bar - Play/Pause
     if (e.code === 'Space' && !e.ctrlKey) {
-        e.preventDefault(); // Prevent page scroll
+        e.preventDefault();
         if (isPlaying) {
             pauseMusic();
         } else {
@@ -412,19 +423,21 @@ document.addEventListener('keydown', (e) => {
         changeMusic(-1);
     }
 
+    // K - Download current song (only when search is not focused)
+    if (e.code === 'KeyK' && !e.ctrlKey) {
+        downloadCurrentSong();
+    }
+});
+
+// Separate event listener for search shortcuts
+document.addEventListener('keydown', (e) => {
     // Ctrl + K or Forward Slash for search focus
     if ((e.code === 'KeyK' && (e.ctrlKey || e.metaKey)) || (!e.ctrlKey && !e.metaKey && e.key === '/')) {
         e.preventDefault();
         searchInput.focus();
-        // Clear the input when using slash key
         if (e.key === '/') {
             searchInput.value = '';
         }
-    }
-
-    // K - Download current song
-    if (e.code === 'KeyK' && !e.ctrlKey) {
-        downloadCurrentSong();
     }
 });
 
@@ -432,3 +445,6 @@ document.addEventListener('keydown', (e) => {
 // searchInput is already declared at the top of the file
 // No need to redeclare it
 searchInput.setAttribute('placeholder', 'Search songs (Ctrl + K or /)');
+
+// Update the download button tooltip to show the shortcut
+downloadBtn.setAttribute('title', 'Download');
